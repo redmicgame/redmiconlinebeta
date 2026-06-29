@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "A player account.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "artistId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["email", "createdAt"]
+    },
+    "Artist": {
+      "title": "Artist",
+      "description": "An artist object representing a player character.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "fandomName": { "type": "string" },
+        "image": { "type": "string" },
+        "money": { "type": "number" },
+        "popularity": { "type": "number" },
+        "hype": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["userId", "name", "fandomName", "image", "money", "popularity", "hype", "createdAt", "updatedAt"]
+    },
+    "Tweet": {
+      "title": "Tweet",
+      "description": "A post on the global X feed.",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorUsername": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "content": { "type": "string" },
+        "image": { "type": "string" },
+        "quoteData": { "type": "string" },
+        "likes": { "type": "number" },
+        "retweets": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["authorId", "content", "likes", "retweets", "createdAt"]
+    }
+    "Song": {
+      "title": "Song",
+      "description": "Global MMO song.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "artistId": { "type": "string" },
+        "artistName": { "type": "string" },
+        "coverArt": { "type": "string" },
+        "streams": { "type": "number" },
+        "lastWeekStreams": { "type": "number" },
+        "sales": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["title", "artistId", "artistName", "streams"]
+    },
+    "Album": {
+      "title": "Album",
+      "description": "Global MMO album.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "artistId": { "type": "string" },
+        "artistName": { "type": "string" },
+        "coverArt": { "type": "string" },
+        "streams": { "type": "number" },
+        "lastWeekStreams": { "type": "number" },
+        "sales": { "type": "number" },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      },
+      "required": ["title", "artistId", "artistName", "streams"]
+    },
+    "PlayerRequest": {
+      "title": "PlayerRequest",
+      "description": "A request sent from one player to another (e.g., feature, dating).",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "metadata": { "type": "object" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["senderId", "receiverId", "type", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/tweets/{tweetId}": {
+      "schema": { "$ref": "#/entities/Tweet" },
+      "description": "Live X feed posts."
+    },
+    "/songs/{songId}": {
+      "schema": { "$ref": "#/entities/Song" },
+      "description": "Global songs for MMO charts."
+    },
+    "/albums/{albumId}": {
+      "schema": { "$ref": "#/entities/Album" },
+      "description": "Global albums for MMO charts."
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Player accounts."
+    },
+    "/artists/{artistId}": {
+      "schema": { "$ref": "#/entities/Artist" },
+      "description": "Global artists representing real players."
+    },
+    "/requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PlayerRequest" },
+      "description": "Global player requests."
+    }
+  }
+}

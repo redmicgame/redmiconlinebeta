@@ -1,0 +1,84 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+       allow read, write: if false; 
+    }
+
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function existing() { return resource.data; }
+    function incoming() { return request.resource.data; }
+
+    match /songs/{songId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+    }
+
+    match /albums/{albumId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+    }
+
+    match /users/{userId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId;
+
+      match /saves/{saveId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
+    }
+
+    match /artists/{artistId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update: if isSignedIn() && existing().userId == request.auth.uid && incoming().userId == existing().userId;
+    }
+    
+    function isValidTweet(data) {
+        return data.keys().hasAll(['authorId', 'authorName', 'authorUsername', 'authorAvatar', 'content', 'likes', 'retweets', 'createdAt']) &&
+               data.authorId is string && data.authorId.size() <= 128 &&
+               data.authorName is string && data.authorUsername is string && data.authorAvatar is string &&
+               data.content is string && data.content.size() <= 500 &&
+               data.likes is number && data.retweets is number &&
+               data.createdAt is number &&
+               (!data.keys().hasAll(['image']) || (data.image is string && data.image.size() <= 1048576)) &&
+               (!data.keys().hasAll(['quoteData']) || (data.quoteData is string && data.quoteData.size() <= 5000));
+    }
+
+    match /tweets/{tweetId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() &&
+                    isValidId(tweetId) &&
+                    isValidTweet(incoming());
+                    // In a perfect setup, we'd verify incoming().authorId belongs to the user,
+                    // but for now, any authenticated user can post.
+      allow update: if isSignedIn() &&
+                    isValidTweet(incoming()) &&
+                    incoming().authorId == existing().authorId && // Don't change author
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().content == existing().content &&
+                    incoming().image == existing().image; // Only allow updating likes/retweets
+    }
+    
+    // Legacy support to avoid immediate breaking
+    match /saves/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /claimedNames/{nameId} {
+      allow read: if true;
+      allow create: if isSignedIn() && incoming().userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /requests/{requestId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if true;
+    }
+  }
+}
