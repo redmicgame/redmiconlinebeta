@@ -254,6 +254,8 @@ export const syncMmoArtist = async (artistId: string, data: any) => {
             money: data.money,
             popularity: data.popularity,
             monthlyListeners: data.monthlyListeners || 0,
+            relationshipStatus: data.relationshipStatus || 'Single',
+            biggestHit: data.biggestHit || null,
             updatedAt: Date.now()
         });
     } catch (error) {

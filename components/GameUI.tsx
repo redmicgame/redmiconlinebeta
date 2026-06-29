@@ -23,6 +23,7 @@ const GameUI: React.FC = () => {
         if (!isMmoMode) return;
 
         let hasDispatched = false;
+        let timeoutId: ReturnType<typeof setTimeout>;
 
         const checkTime = () => {
             const now = Date.now();
@@ -37,21 +38,23 @@ const GameUI: React.FC = () => {
             const elapsedSinceEpoch = now - epoch;
             const globalWeekNumber = Math.max(1, Math.floor(elapsedSinceEpoch / MMO_WEEK_MS) + 1);
 
-            // Convert local game date to local week number
-            const localWeekNumber = (date.year - 2024) * 52 + date.week;
+            // Convert local game date to local week number relative to 2026 (the MMO start year)
+            const localWeekNumber = (date.year - 2026) * 52 + date.week;
             
             // Catch-up logic: If local game is behind global clock, progress week
             // Only dispatch once per effect run to avoid infinite loop crashes
             if (localWeekNumber < globalWeekNumber && !hasDispatched) {
                 hasDispatched = true;
                 dispatch({ type: 'PROGRESS_WEEK' });
+                timeoutId = setTimeout(checkTime, 50);
+            } else {
+                timeoutId = setTimeout(checkTime, 1000);
             }
         };
 
         checkTime();
-        const interval = setInterval(checkTime, 1000); // Check every second
 
-        return () => clearInterval(interval);
+        return () => clearTimeout(timeoutId);
     }, [isMmoMode, date.week, date.year, dispatch]);
 
     const formatTime = (ms: number) => {

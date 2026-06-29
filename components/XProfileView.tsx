@@ -247,12 +247,18 @@ const XProfileView: React.FC = () => {
                     quotePost={quotePostTarget}
                     onClose={() => setQuotePostTarget(null)}
                     onPost={async (payload) => {
-                        const { postMmoTweet } = await import('../firebase');
-                        try {
-                            await postMmoTweet(playerUser.id, playerUser.name, playerUser.username, playerUser.avatar, payload.content, payload.image);
-                        } catch (err) {
-                            console.error(err);
+                        const isMmoMode = !!(gameState.activeArtistId && gameState.artistsData[gameState.activeArtistId]?.userId);
+                        if (isMmoMode) {
+                            const { postMmoTweet } = await import('../firebase');
+                            try {
+                                await postMmoTweet(playerUser.id, playerUser.name, playerUser.username, playerUser.avatar, payload.content, payload.image, payload.quoteOf);
+                            } catch (err) {
+                                console.error(err);
+                            }
                         }
+                        
+                        dispatch({ type: 'POST_ON_X', payload });
+                        
                         setQuotePostTarget(null);
                     }}
                 />

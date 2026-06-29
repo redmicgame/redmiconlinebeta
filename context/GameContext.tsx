@@ -10988,10 +10988,28 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             // Sync artist wrapper
             try {
                 if (user && user.artistId) { // Check if signed in user matches
+                    let relationshipStatus = 'Single';
+                    if (artistData.relationships && artistData.relationships.length > 0) {
+                        const activeRel = artistData.relationships.find(r => r.status === 'dating' || r.status === 'married');
+                        if (activeRel) {
+                            relationshipStatus = activeRel.status === 'married' ? 'Married' : 'Taken';
+                        }
+                    }
+
+                    let biggestHit = null;
+                    if (artistData.songs && artistData.songs.length > 0) {
+                        const topSong = [...artistData.songs].sort((a, b) => (b.streams || 0) - (a.streams || 0))[0];
+                        if (topSong && topSong.streams && topSong.streams > 0) {
+                            biggestHit = topSong.title;
+                        }
+                    }
+
                     await syncMmoArtist(user.artistId, {
                         money: artistData.money || 0,
                         popularity: artistData.popularity || 0,
-                        monthlyListeners: artistData.monthlyListeners || 0
+                        monthlyListeners: artistData.monthlyListeners || 0,
+                        relationshipStatus,
+                        biggestHit
                     });
                 }
             } catch (err) {}

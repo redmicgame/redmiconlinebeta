@@ -405,12 +405,15 @@ const Post: React.FC<{ post: XPost; author: XUser | undefined; onQuote?: (post: 
 };
 
 const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) => {
-    const { activeArtistData } = useGame();
-    const { xUsers } = activeArtistData!;
+    const { gameState, activeArtistData } = useGame();
+    const { xUsers, xPosts = [] } = activeArtistData!;
     const [displayCount, setDisplayCount] = useState(20);
     const [liveTweets, setLiveTweets] = useState<any[]>([]);
 
+    const isMmoMode = !!(gameState.activeArtistId && gameState.artistsData[gameState.activeArtistId]?.userId);
+
     useEffect(() => {
+        if (!isMmoMode) return;
         const importFirebase = async () => {
             const { subscribeToMmoTweets } = await import('../firebase');
             const unsubscribe = subscribeToMmoTweets((tweets) => {
@@ -422,17 +425,17 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
         return () => {
             promise.then(cleanup => cleanup && cleanup());
         };
-    }, []);
+    }, [isMmoMode]);
 
     const findUser = (id: string, tweet: any) => {
         // Fallback to the tweet's embedded author data if user not found locally
         const localUser = xUsers.find(u => u.id === id);
         if (localUser) return localUser;
         return {
-            id: tweet.authorId,
-            name: tweet.authorName || 'Unknown Player',
-            username: tweet.authorUsername || 'unknown',
-            avatar: tweet.authorAvatar || 'https://ui-avatars.com/api/?name=U&background=random',
+            id: tweet?.authorId || id,
+            name: tweet?.authorName || 'Unknown Player',
+            username: tweet?.authorUsername || 'unknown',
+            avatar: tweet?.authorAvatar || 'https://ui-avatars.com/api/?name=U&background=random',
             isVerified: true,
             followersCount: 1000,
             followingCount: 0,
@@ -441,7 +444,7 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
     };
 
     // Format MMO tweets to match XPost structure
-    const displayedPosts: XPost[] = liveTweets.map(t => {
+    const displayedPosts: XPost[] = isMmoMode ? liveTweets.map(t => {
         // Collect real live replies from the same payload
         const replies = liveTweets
             .filter(lt => lt.quoteOf?.id === t.id)
@@ -466,7 +469,7 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
             date: { week: 1, year: 2026 },
             comments: replies
         };
-    });
+    }) : xPosts;
 
     // Dummy Stories
     const storyUsers = xUsers.filter(u => u.isVerified).slice(0, 10);
@@ -484,10 +487,12 @@ const FeedView: React.FC<{ onQuote?: (post: XPost) => void }> = ({ onQuote }) =>
                     <span className="text-xs text-zinc-400">Add Story</span>
                 </div>
             </div>
-            {liveTweets.length === 0 ? (
+            {isMmoMode && liveTweets.length === 0 ? (
                 <div className="p-8 text-center text-zinc-500">Waiting for live tweets...</div>
+            ) : !isMmoMode && displayedPosts.length === 0 ? (
+                <div className="p-8 text-center text-zinc-500">No posts yet. Make some noise!</div>
             ) : (
-                displayedPosts.map(post => <Post key={post.id} post={post} author={findUser(post.authorId, liveTweets.find(t=>t.id===post.id))} onQuote={onQuote} />)
+                displayedPosts.slice(0, displayCount).map(post => <Post key={post.id} post={post} author={findUser(post.authorId, isMmoMode ? liveTweets.find(t=>t.id===post.id) : null)} onQuote={onQuote} />)
             )}
         </div>
     );
@@ -731,12 +736,39 @@ const AccountsView: React.FC = () => {
         if (file && changingAvatarForAccountId) {
             const reader = new FileReader();
             reader.onloadend = () => {
-                dispatch({ 
-                    type: 'UPDATE_NPC_AVATAR', 
-                    payload: { userId: changingAvatarForAccountId, newAvatar: reader.result as string } 
-                });
-                setChangingAvatarForAccountId(null);
-                if (fileInputRef.current) fileInputRef.current.value = '';
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 150;
+                    const MAX_HEIGHT = 150;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    
+                    dispatch({ 
+                        type: 'UPDATE_NPC_AVATAR', 
+                        payload: { userId: changingAvatarForAccountId, newAvatar: canvas.toDataURL('image/jpeg', 0.5) } 
+                    });
+                    setChangingAvatarForAccountId(null);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                };
+                img.src = reader.result as string;
             };
             reader.readAsDataURL(file);
         }
@@ -922,7 +954,33 @@ export const ComposeXPostModal: React.FC<{
             const file = e.target.files[0];
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImage(reader.result as string);
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 600;
+                    const MAX_HEIGHT = 600;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height) {
+                        if (width > MAX_WIDTH) {
+                            height *= MAX_WIDTH / width;
+                            width = MAX_WIDTH;
+                        }
+                    } else {
+                        if (height > MAX_HEIGHT) {
+                            width *= MAX_HEIGHT / height;
+                            height = MAX_HEIGHT;
+                        }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    setImage(canvas.toDataURL('image/jpeg', 0.5));
+                };
+                img.src = reader.result as string;
             };
             reader.readAsDataURL(file);
         }
@@ -1110,12 +1168,20 @@ const XView: React.FC = () => {
                         setQuotePostTarget(null);
                     }}
                     onPost={async (payload) => {
-                        const { postMmoTweet } = await import('../firebase');
-                        try {
-                            await postMmoTweet(playerUser.id, playerUser.name, playerUser.username, playerUser.avatar, payload.content, payload.image, payload.quoteOf);
-                        } catch (err) {
-                            console.error(err);
+                        const isMmoMode = !!(gameState.activeArtistId && gameState.artistsData[gameState.activeArtistId]?.userId);
+                        
+                        if (isMmoMode) {
+                            const { postMmoTweet } = await import('../firebase');
+                            try {
+                                await postMmoTweet(playerUser.id, playerUser.name, playerUser.username, playerUser.avatar, payload.content, payload.image, payload.quoteOf);
+                            } catch (err) {
+                                console.error(err);
+                            }
                         }
+                        
+                        // Always dispatch locally so fanWars and pushes are tracked
+                        dispatch({ type: 'POST_ON_X', payload });
+                        
                         setIsComposeModalOpen(false);
                         setQuotePostTarget(null);
                     }}
