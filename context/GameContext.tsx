@@ -11043,7 +11043,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         };
 
         syncData();
-    }, [gameState.date, gameState.careerMode, isLoading, isAuthLoading, user]);
+    }, [gameState.date, gameState.activeArtistId ? gameState.artistsData[gameState.activeArtistId]?.songs : undefined, gameState.activeArtistId ? gameState.artistsData[gameState.activeArtistId]?.releases : undefined, gameState.careerMode, isLoading, isAuthLoading, user]);
 
     // MMO Requests Subscription Effect
     useEffect(() => {

@@ -17,6 +17,19 @@ const GameUI: React.FC = () => {
     const isMmoMode = !!(activeArtistId && artistsData[activeArtistId]?.userId);
 
     const [msUntilNextWeek, setMsUntilNextWeek] = useState<number>(0);
+    const [timeOffset, setTimeOffset] = useState<number>(0);
+
+    // Fetch server time once to prevent local clock manipulation and sync players
+    useEffect(() => {
+        if (!isMmoMode) return;
+        fetch('https://worldtimeapi.org/api/timezone/Etc/UTC')
+            .then(res => res.json())
+            .then(data => {
+                const serverTime = new Date(data.datetime).getTime();
+                setTimeOffset(serverTime - Date.now());
+            })
+            .catch(err => console.error('Failed to sync world time:', err));
+    }, [isMmoMode]);
 
     // Global MMO Timer & Catch-up Logic
     useEffect(() => {
@@ -26,7 +39,7 @@ const GameUI: React.FC = () => {
         let timeoutId: ReturnType<typeof setTimeout>;
 
         const checkTime = () => {
-            const now = Date.now();
+            const now = Date.now() + timeOffset;
             
             // Calculate time left in current 15-minute block
             const msLeft = MMO_WEEK_MS - (now % MMO_WEEK_MS);
