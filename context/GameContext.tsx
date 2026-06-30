@@ -10982,7 +10982,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const artistData = gameState.artistsData[playerArtistId];
         if (!artistData) return;
 
-        const syncData = async () => {
+        const syncTimeout = setTimeout(async () => {
             const { syncMmoSongs, syncMmoAlbums, syncMmoArtist } = await import('../firebase');
             
             // Sync artist wrapper
@@ -11040,9 +11040,9 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             if (songsToSync.length > 0) await syncMmoSongs(songsToSync);
             if (albumsToSync.length > 0) await syncMmoAlbums(albumsToSync);
-        };
+        }, 5000);
 
-        syncData();
+        return () => clearTimeout(syncTimeout);
     }, [gameState.date, gameState.activeArtistId ? gameState.artistsData[gameState.activeArtistId]?.songs : undefined, gameState.activeArtistId ? gameState.artistsData[gameState.activeArtistId]?.releases : undefined, gameState.careerMode, isLoading, isAuthLoading, user]);
 
     // MMO Requests Subscription Effect
