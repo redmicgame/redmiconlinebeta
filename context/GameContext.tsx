@@ -10987,7 +10987,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             
             // Sync artist wrapper
             try {
-                if (user && user.artistId) { // Check if signed in user matches
+                if (user && artistData.userId === user.uid) {
                     let relationshipStatus = 'Single';
                     if (artistData.relationships && artistData.relationships.length > 0) {
                         const activeRel = artistData.relationships.find(r => r.status === 'dating' || r.status === 'married');
@@ -11004,7 +11004,7 @@ export const GameProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                         }
                     }
 
-                    await syncMmoArtist(user.artistId, {
+                    await syncMmoArtist(playerArtistId, {
                         money: artistData.money || 0,
                         popularity: artistData.popularity || 0,
                         monthlyListeners: artistData.monthlyListeners || 0,

@@ -166,24 +166,14 @@ const RiaaView: React.FC = () => {
     const [mmoAlbums, setMmoAlbums] = useState<any[]>([]);
 
     React.useEffect(() => {
-        let unsubscribeSongs: (() => void) | undefined;
-        let unsubscribeAlbums: (() => void) | undefined;
-
         const loadCerts = async () => {
-            const { subscribeToMmoCharts } = await import('../firebase');
-            unsubscribeSongs = subscribeToMmoCharts('songs', 'streams', 500, (songs) => {
-                setMmoSongs(songs);
-            });
-            unsubscribeAlbums = subscribeToMmoCharts('albums', 'streams', 500, (albums) => {
-                setMmoAlbums(albums);
-            });
+            const { getMmoCharts } = await import('../firebase');
+            const songs = await getMmoCharts('songs', 'streams', 500);
+            setMmoSongs(songs);
+            const albums = await getMmoCharts('albums', 'streams', 500);
+            setMmoAlbums(albums);
         };
         loadCerts();
-
-        return () => {
-            if (unsubscribeSongs) unsubscribeSongs();
-            if (unsubscribeAlbums) unsubscribeAlbums();
-        };
     }, []);
 
     const allCerts = useMemo(() => {

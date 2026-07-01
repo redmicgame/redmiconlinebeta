@@ -21,15 +21,47 @@ const ChartItemPreview: React.FC<{
 
 const ChartsTab: React.FC = () => {
     const { gameState, dispatch } = useGame();
-    const { billboardHot100, spotifyGlobal = [], billboardTopAlbums, hotPopSongs, hotRapRnb, electronicChart, countryChart } = gameState;
+    const { billboardHot100, spotifyGlobal = [], billboardTopAlbums, hotPopSongs, hotRapRnb, electronicChart, countryChart, activeArtistId, artistsData } = gameState;
+    const isMmoMode = !!(activeArtistId && artistsData[activeArtistId]?.userId);
 
-    const billboardTop3 = billboardHot100.slice(0, 3);
-    const spotifyTop3 = spotifyGlobal.slice(0, 3);
-    const billboardAlbumsTop3 = billboardTopAlbums.slice(0, 3);
-    const hotPopTop3 = hotPopSongs.slice(0, 3);
-    const hotRapRnbTop3 = hotRapRnb.slice(0, 3);
-    const electronicTop3 = electronicChart.slice(0, 3);
-    const countryTop3 = countryChart.slice(0, 3);
+    const [mmoSongs, setMmoSongs] = React.useState<any[]>([]);
+    const [mmoAlbums, setMmoAlbums] = React.useState<any[]>([]);
+
+    React.useEffect(() => {
+        if (!isMmoMode) return;
+        const loadCharts = async () => {
+            const { getMmoCharts } = await import('../firebase');
+            const songs = await getMmoCharts('songs', 'lastWeekStreams', 3);
+            setMmoSongs(songs);
+            const albums = await getMmoCharts('albums', 'lastWeekStreams', 3);
+            setMmoAlbums(albums);
+        };
+        loadCharts();
+    }, [isMmoMode]);
+
+    const getTop3Songs = (localChart: any[]) => {
+        if (isMmoMode) {
+            if (mmoSongs.length === 0) return [];
+            return mmoSongs.map((s, i) => ({ rank: i + 1, coverArt: s.coverArt, title: s.title, artist: s.artistName, uniqueId: `mmo-song-${s.id}` }));
+        }
+        return localChart.slice(0, 3);
+    };
+
+    const getTop3Albums = (localChart: any[]) => {
+        if (isMmoMode) {
+            if (mmoAlbums.length === 0) return [];
+            return mmoAlbums.map((a, i) => ({ rank: i + 1, coverArt: a.coverArt, title: a.title, artist: a.artistName, uniqueId: `mmo-album-${a.id}` }));
+        }
+        return localChart.slice(0, 3);
+    };
+
+    const billboardTop3 = getTop3Songs(billboardHot100);
+    const spotifyTop3 = getTop3Songs(spotifyGlobal);
+    const billboardAlbumsTop3 = getTop3Albums(billboardTopAlbums);
+    const hotPopTop3 = getTop3Songs(hotPopSongs);
+    const hotRapRnbTop3 = getTop3Songs(hotRapRnb);
+    const electronicTop3 = getTop3Songs(electronicChart);
+    const countryTop3 = getTop3Songs(countryChart);
 
     return (
         <div className="p-4 space-y-6">

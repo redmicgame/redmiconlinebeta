@@ -255,8 +255,7 @@ export const syncMmoArtist = async (artistId: string, data: any) => {
             popularity: data.popularity,
             monthlyListeners: data.monthlyListeners || 0,
             relationshipStatus: data.relationshipStatus || 'Single',
-            biggestHit: data.biggestHit || null,
-            updatedAt: Date.now()
+            biggestHit: data.biggestHit || null
         });
     } catch (error) {
         console.error("Error syncing MMO artist:", error);
@@ -273,11 +272,10 @@ export const syncMmoSongs = async (songs: any[]) => {
                 title: song.title,
                 artistId: song.artistId,
                 artistName: song.artistName,
-                coverArt: song.coverArt || '',
+                coverArt: song.coverArt && song.coverArt.length < 300000 ? song.coverArt : '',
                 streams: song.streams || 0,
                 lastWeekStreams: song.lastWeekStreams || 0,
-                sales: song.sales || 0,
-                updatedAt: Date.now()
+                sales: song.sales || 0
             }, { merge: true });
         }
         await batch.commit();
@@ -296,11 +294,10 @@ export const syncMmoAlbums = async (albums: any[]) => {
                 title: album.title,
                 artistId: album.artistId,
                 artistName: album.artistName,
-                coverArt: album.coverArt || '',
+                coverArt: album.coverArt && album.coverArt.length < 300000 ? album.coverArt : '',
                 streams: album.streams || 0,
                 lastWeekStreams: album.lastWeekStreams || 0,
-                sales: album.sales || 0,
-                updatedAt: Date.now()
+                sales: album.sales || 0
             }, { merge: true });
         }
         await batch.commit();
@@ -309,15 +306,12 @@ export const syncMmoAlbums = async (albums: any[]) => {
     }
 }
 
-export const fetchMmoArtists = async () => {
-    try {
-        const q = query(collection(db, 'artists'), orderBy('popularity', 'desc'), limit(100));
-        const snapshot = await getDocs(q);
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    } catch (error) {
-        console.error("Error fetching MMO artists:", error);
-        return [];
-    }
+export const subscribeToMmoArtists = (callback: (artists: any[]) => void) => {
+    const q = query(collection(db, 'artists'), orderBy('popularity', 'desc'), limit(100));
+    return onSnapshot(q, (snapshot) => {
+        const artists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        callback(artists);
+    });
 }
 
 export const sendMmoRequest = async (senderId: string, senderName: string, receiverId: string, type: string, metadata: any) => {
@@ -374,10 +368,8 @@ export const updateMmoRequestStatus = async (requestId: string, status: 'ACCEPTE
     }
 }
 
-export const subscribeToMmoCharts = (collectionName: 'songs' | 'albums', sortBy: 'streams' | 'lastWeekStreams', limitCount: number, callback: (items: any[]) => void) => {
+export const getMmoCharts = async (collectionName: 'songs' | 'albums', sortBy: 'streams' | 'lastWeekStreams', limitCount: number) => {
     const q = query(collection(db, collectionName), orderBy(sortBy, 'desc'), limit(limitCount));
-    return onSnapshot(q, (snapshot) => {
-        const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        callback(items);
-    });
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }

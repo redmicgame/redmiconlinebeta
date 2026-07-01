@@ -1173,9 +1173,25 @@ const XView: React.FC = () => {
                         if (isMmoMode) {
                             const { postMmoTweet } = await import('../firebase');
                             try {
-                                await postMmoTweet(playerUser.id, playerUser.name, playerUser.username, playerUser.avatar, payload.content, payload.image, payload.quoteOf);
-                            } catch (err) {
+                                let sanitizedQuote: any = undefined;
+                                if (payload.quoteOf) {
+                                    sanitizedQuote = {
+                                        authorId: payload.quoteOf.authorId,
+                                        content: payload.quoteOf.content,
+                                        image: payload.quoteOf.image && payload.quoteOf.image.length > 300000 ? null : payload.quoteOf.image,
+                                    };
+                                }
+                                
+                                const safeAvatar = playerUser.avatar && playerUser.avatar.length > 300000 
+                                    ? 'https://ui-avatars.com/api/?background=random&name=' + encodeURIComponent(playerUser.name)
+                                    : playerUser.avatar;
+                                    
+                                const safeImage = payload.image && payload.image.length > 300000 ? null : payload.image;
+                                
+                                await postMmoTweet(playerUser.id, playerUser.name, playerUser.username, safeAvatar, payload.content, safeImage, sanitizedQuote);
+                            } catch (err: any) {
                                 console.error(err);
+                                alert("Failed to post online: " + err.message + "\nYour image or avatar might be too large.");
                             }
                         }
                         

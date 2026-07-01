@@ -156,24 +156,14 @@ const BillboardView: React.FC = () => {
     const [mmoAlbums, setMmoAlbums] = useState<any[]>([]);
 
     useEffect(() => {
-        let unsubscribeSongs: (() => void) | undefined;
-        let unsubscribeAlbums: (() => void) | undefined;
-
         const loadCharts = async () => {
-            const { subscribeToMmoCharts } = await import('../firebase');
-            unsubscribeSongs = subscribeToMmoCharts('songs', 'lastWeekStreams', 150, (songs) => {
-                setMmoSongs(songs);
-            });
-            unsubscribeAlbums = subscribeToMmoCharts('albums', 'lastWeekStreams', 200, (albums) => {
-                setMmoAlbums(albums);
-            });
+            const { getMmoCharts } = await import('../firebase');
+            const songs = await getMmoCharts('songs', 'lastWeekStreams', 150);
+            setMmoSongs(songs);
+            const albums = await getMmoCharts('albums', 'lastWeekStreams', 200);
+            setMmoAlbums(albums);
         };
         loadCharts();
-
-        return () => {
-            if (unsubscribeSongs) unsubscribeSongs();
-            if (unsubscribeAlbums) unsubscribeAlbums();
-        };
     }, []);
 
     const getWeekDate = (d: GameDate) => {

@@ -60,18 +60,12 @@ const SpotifyTopSongsView: React.FC = () => {
     const [mmoSongs, setMmoSongs] = React.useState<any[]>([]);
 
     React.useEffect(() => {
-        let unsubscribeSongs: (() => void) | undefined;
         const loadCharts = async () => {
-            const { subscribeToMmoCharts } = await import('../firebase');
-            unsubscribeSongs = subscribeToMmoCharts('songs', 'lastWeekStreams', 100, (songs) => {
-                setMmoSongs(songs);
-            });
+            const { getMmoCharts } = await import('../firebase');
+            const songs = await getMmoCharts('songs', 'lastWeekStreams', 100);
+            setMmoSongs(songs);
         };
         loadCharts();
-
-        return () => {
-            if (unsubscribeSongs) unsubscribeSongs();
-        };
     }, []);
 
     const getGlobalSpotifyTopSongs = (): ChartEntry[] => {

@@ -28,17 +28,12 @@ const SpotifyChartView: React.FC = () => {
     const [mmoSongs, setMmoSongs] = useState<any[]>([]);
 
     useEffect(() => {
-        let unsubscribeSongs: (() => void) | undefined;
         const loadCharts = async () => {
-            const { subscribeToMmoCharts } = await import('../firebase');
-            unsubscribeSongs = subscribeToMmoCharts('songs', 'lastWeekStreams', 50, (songs) => {
-                setMmoSongs(songs);
-            });
+            const { getMmoCharts } = await import('../firebase');
+            const songs = await getMmoCharts('songs', 'lastWeekStreams', 50);
+            setMmoSongs(songs);
         };
         loadCharts();
-        return () => {
-            if (unsubscribeSongs) unsubscribeSongs();
-        };
     }, []);
 
     const getGlobalSpotify50 = (): ChartEntry[] => {

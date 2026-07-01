@@ -8,17 +8,22 @@ const LeaderboardsView: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let unsubscribe: (() => void) | undefined;
         const fetchLeaderboard = async () => {
-            const { fetchMmoArtists } = await import('../firebase');
-            const data = await fetchMmoArtists();
-            setArtists(data);
-            setLoading(false);
+            const { subscribeToMmoArtists } = await import('../firebase');
+            unsubscribe = subscribeToMmoArtists((data) => {
+                setArtists(data);
+                setLoading(false);
+            });
         };
         fetchLeaderboard();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
     }, []);
 
     return (
-        <div className="bg-[#121212] h-screen overflow-y-auto pb-32 text-white">
+        <div className="bg-[#121212] h-[100dvh] overflow-y-auto pb-32 text-white">
             <header className="sticky top-0 z-10 bg-zinc-900 border-b border-zinc-800 p-4 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <button onClick={() => dispatch({ type: 'CHANGE_VIEW', payload: 'game' })} className="p-2 -ml-2 hover:bg-zinc-800 rounded-full transition-colors">
